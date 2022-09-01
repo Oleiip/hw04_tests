@@ -76,12 +76,19 @@ class TaskPagesTests(TestCase):
                     kwargs={'slug': self.group.slug}
                     ))
         first_object = response.context['page_obj'][0]
+        group_object = response.context['group']
         task_id_0 = first_object.group.id
         task_title_0 = first_object.group.title
         task_slug_0 = first_object.group.slug
+        task_id = group_object.id
+        task_title = group_object.title
+        task_slug = group_object.slug
         self.assertEqual(task_id_0, self.group.id)
         self.assertEqual(task_title_0, self.group.title)
         self.assertEqual(task_slug_0, self.group.slug)
+        self.assertEqual(task_id, self.group.id)
+        self.assertEqual(task_title, self.group.title)
+        self.assertEqual(task_slug, self.group.slug)
 
     def test_profile_page_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
@@ -90,10 +97,15 @@ class TaskPagesTests(TestCase):
                     kwargs={'username': self.user1.username}
                     ))
         first_object = response.context['page_obj'][0]
+        author_object = response.context['author']
         task_id_0 = first_object.author.id
         task_username_0 = first_object.author.username
+        task_id = author_object.id
+        task_username = author_object.username
         self.assertEqual(task_id_0, self.user1.id)
         self.assertEqual(task_username_0, self.user1.username)
+        self.assertEqual(task_id, self.user1.id)
+        self.assertEqual(task_username, self.user1.username)
 
     def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
@@ -103,7 +115,11 @@ class TaskPagesTests(TestCase):
                     ))
         first_object = response.context['post']
         task_id_0 = first_object.id
+        task_author_0 = first_object.author.username
+        task_group_0 = first_object.group.title
         self.assertEqual(task_id_0, self.post1.id)
+        self.assertEqual(task_author_0, self.user1.username)
+        self.assertEqual(task_group_0, self.group.title)
 
     def test_post_edit_page_show_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""

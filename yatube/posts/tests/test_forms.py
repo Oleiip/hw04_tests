@@ -1,39 +1,36 @@
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-from posts.models import Group, Post
-User = get_user_model()
+from posts.models import Group, Post, User
+from posts.forms import PostForm
 
 
 class PostCreateForm(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        # Создаем запись в базе данных для проверки сушествующего slug
-        cls.user = User.objects.create_user(username='author')
-        cls.group = Group.objects.create(
-            title='Тестовая группа',
-            slug='test-slug',
-            description='Тестовое описание',
-        )
-        cls.post = Post.objects.create(
-            text='Текст поста',
-            author=cls.user,
-            group=cls.group,
-            pub_date='Дата публикации',
-        )
-        cls.form = PostCreateForm()
+        cls.form = PostForm()
 
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
+        self.user = User.objects.create_user(username='author')
         self.authorized_client.force_login(self.user)
 
     def test_create_post(self):
+        self.group = Group.objects.create(
+            title='Тестовая группа',
+            slug='test-slug',
+            description='Тестовое описание',
+        )
+        self.post = Post.objects.create(
+            text='Текст поста',
+            author=self.user,
+            group=self.group,
+        )
         posts_count = Post.objects.count()
         form_data = {
-            'group': PostCreateForm.group.id,
-            'text': 'Тестовый текст',
+            'group': 'Тестовая группа',
+            'text': PostCreateForm.post.text,
         }
         response = self.authorized_client.post(
             reverse('posts:post_create'),
@@ -42,13 +39,13 @@ class PostCreateForm(TestCase):
         )
         self.assertRedirects(
             response,
-            reverse('posts:profile', kwargs={'username': 'author'}))
+            reverse('posts:profile', kwargs={'username': self.user.username}))
 
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertTrue(
             Post.objects.filter(
-                text='Тестовый текст',
-                group=PostCreateForm.group,
+                text=PostCreateForm.post.text,
+                group='Тестовая группа',
             ).exists()
         )
 

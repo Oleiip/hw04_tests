@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from ..models import Group, Post
+from posts.models import Group, Post
 
 User = get_user_model()
 
@@ -18,13 +18,13 @@ class PostModelTest(TestCase):
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовый пост',
+            text='Тестовый пост jguygofugfwihirh',
         )
 
     def test_models_have_correct_object_names(self):
         group = PostModelTest.group
-        expected_object_name = group.title
+        expected_object_name = self.group.title
         self.assertEqual(expected_object_name, str(group))
         post = PostModelTest.post
-        expected_name = post.text
+        expected_name = self.post.text[:15]
         self.assertEqual(expected_name, str(post))
