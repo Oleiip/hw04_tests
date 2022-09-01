@@ -1,5 +1,3 @@
-import shutil
-import tempfile
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -30,7 +28,6 @@ class PostCreateForm(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-
 
     def test_create_post(self):
         posts_count = Post.objects.count()
