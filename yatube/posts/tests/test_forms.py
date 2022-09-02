@@ -19,7 +19,10 @@ class PostCreateForm(TestCase):
             author=cls.user,
             group=cls.group,
         )
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2bd9338045091a6f7eedcb62413837b152a0d4ee
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
@@ -62,7 +65,11 @@ class PostCreateForm(TestCase):
         )
         self.assertEqual(Post.objects.count(), post_count)
         self.assertEqual(response.status_code, 200)
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 2bd9338045091a6f7eedcb62413837b152a0d4ee
     def test_update_form(self):
         posts_count = Post.objects.count()
         form_data = {
@@ -70,7 +77,12 @@ class PostCreateForm(TestCase):
             'text': 'Обновленный текст',
         }
         response = self.authorized_client.post(
+<<<<<<< HEAD
             reverse('posts:post_edit', kwargs={'post_id': self.post.id}),
+=======
+            reverse('posts:post_edit',
+                kwargs={'post_id': self.post.id}),
+>>>>>>> 2bd9338045091a6f7eedcb62413837b152a0d4ee
             data=form_data,
             follow=True
         )
@@ -85,4 +97,8 @@ class PostCreateForm(TestCase):
                 group=PostCreateForm.group.id,
             ).exists()
         )
+<<<<<<< HEAD
         self.assertEqual(Post.objects.count(), posts_count)
+=======
+        self.assertEqual(Post.objects.count(), posts_count)
+>>>>>>> 2bd9338045091a6f7eedcb62413837b152a0d4ee
