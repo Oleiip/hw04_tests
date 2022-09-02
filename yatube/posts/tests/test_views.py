@@ -77,18 +77,12 @@ class TaskPagesTests(TestCase):
                     ))
         first_object = response.context['page_obj'][0]
         group_object = response.context['group']
-        task_id_0 = first_object.group.id
-        task_title_0 = first_object.group.title
-        task_slug_0 = first_object.group.slug
-        task_id = group_object.id
-        task_title = group_object.title
-        task_slug = group_object.slug
-        self.assertEqual(task_id_0, self.group.id)
-        self.assertEqual(task_title_0, self.group.title)
-        self.assertEqual(task_slug_0, self.group.slug)
-        self.assertEqual(task_id, self.group.id)
-        self.assertEqual(task_title, self.group.title)
-        self.assertEqual(task_slug, self.group.slug)
+        self.assertEqual(first_object.group.id, self.group.id)
+        self.assertEqual(first_object.group.title, self.group.title)
+        self.assertEqual(first_object.group.slug, self.group.slug)
+        self.assertEqual(group_object.id, self.group.id)
+        self.assertEqual(group_object.title, self.group.title)
+        self.assertEqual(group_object.slug, self.group.slug)
 
     def test_profile_page_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
@@ -98,14 +92,10 @@ class TaskPagesTests(TestCase):
                     ))
         first_object = response.context['page_obj'][0]
         author_object = response.context['author']
-        task_id_0 = first_object.author.id
-        task_username_0 = first_object.author.username
-        task_id = author_object.id
-        task_username = author_object.username
-        self.assertEqual(task_id_0, self.user1.id)
-        self.assertEqual(task_username_0, self.user1.username)
-        self.assertEqual(task_id, self.user1.id)
-        self.assertEqual(task_username, self.user1.username)
+        self.assertEqual(first_object.author.id, self.user1.id)
+        self.assertEqual(first_object.author.username, self.user1.username)
+        self.assertEqual(author_object.id, self.user1.id)
+        self.assertEqual(author_object.username, self.user1.username)
 
     def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
@@ -114,12 +104,9 @@ class TaskPagesTests(TestCase):
                     kwargs={'post_id': self.post1.id}
                     ))
         first_object = response.context['post']
-        task_id_0 = first_object.id
-        task_author_0 = first_object.author.username
-        task_group_0 = first_object.group.title
-        self.assertEqual(task_id_0, self.post1.id)
-        self.assertEqual(task_author_0, self.user1.username)
-        self.assertEqual(task_group_0, self.group.title)
+        self.assertEqual(first_object.id, self.post1.id)
+        self.assertEqual(first_object.author.username, self.user1.username)
+        self.assertEqual(first_object.group.title, self.group.title)
 
     def test_post_edit_page_show_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""
@@ -151,6 +138,7 @@ class TaskPagesTests(TestCase):
                 self.assertIsInstance(form_field, expected)
 
     def test_first_page_contains_ten_records(self):
+        """На страницу выводится 10 постов"""
         list_views = [
             reverse('posts:index'),
             reverse('posts:group_list',
@@ -164,6 +152,7 @@ class TaskPagesTests(TestCase):
                 self.assertEqual(len(response.context['page_obj']), 10)
 
     def test_second_page_contains_three_records(self):
+        """На 2 страницу выводится 3 поста"""
         list_views = [
             reverse('posts:index'),
             reverse('posts:group_list',

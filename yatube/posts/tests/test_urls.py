@@ -85,8 +85,6 @@ class PostURLTests(TestCase):
                 response = self.guest_client.get(address)
                 self.assertTemplateUsed(response, template)
 
-
-
     def test_unknown_puth_return_404(self):
         response = self.guest_client.get('/unexisting_page/')
         self.assertEqual(response.status_code, 404)

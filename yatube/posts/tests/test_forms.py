@@ -1,36 +1,35 @@
+# pylint: disable=attribute-defined-outside-init
 from django.test import Client, TestCase
 from django.urls import reverse
 from posts.models import Group, Post, User
-from posts.forms import PostForm
 
 
 class PostCreateForm(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.form = PostForm()
-
-    def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.user = User.objects.create_user(username='author')
-        self.authorized_client.force_login(self.user)
-
-    def test_create_post(self):
-        self.group = Group.objects.create(
+        cls.user = User.objects.create_user(username='author')
+        cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
             description='Тестовое описание',
         )
-        self.post = Post.objects.create(
-            text='Текст поста',
-            author=self.user,
-            group=self.group,
+        cls.post = Post.objects.create(
+            text='Тестовый пост',
+            author=cls.user,
+            group=cls.group,
         )
+
+    def setUp(self):
+        self.guest_client = Client()
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+
+    def test_create_post(self):
         posts_count = Post.objects.count()
         form_data = {
-            'group': 'Тестовая группа',
-            'text': PostCreateForm.post.text,
+            'group': PostCreateForm.group.id,
+            'text': 'Новый пост',
         }
         response = self.authorized_client.post(
             reverse('posts:post_create'),
@@ -44,8 +43,8 @@ class PostCreateForm(TestCase):
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertTrue(
             Post.objects.filter(
-                text=PostCreateForm.post.text,
-                group='Тестовая группа',
+                text='Новый пост',
+                group=PostCreateForm.group.id,
             ).exists()
         )
 
@@ -63,3 +62,27 @@ class PostCreateForm(TestCase):
         )
         self.assertEqual(Post.objects.count(), post_count)
         self.assertEqual(response.status_code, 200)
+
+    def test_update_form(self):
+        posts_count = Post.objects.count()
+        form_data = {
+            'group': PostCreateForm.group.id,
+            'text': 'Обновленный текст',
+        }
+        response = self.authorized_client.post(
+            reverse('posts:post_edit', kwargs={'post_id': self.post.id}),
+            data=form_data,
+            follow=True
+        )
+        self.assertRedirects(
+            response,
+            reverse('posts:post_detail',
+                    kwargs={'post_id': self.post.id}))
+
+        self.assertTrue(
+            Post.objects.filter(
+                text='Обновленный текст',
+                group=PostCreateForm.group.id,
+            ).exists()
+        )
+        self.assertEqual(Post.objects.count(), posts_count)
