@@ -4,6 +4,7 @@ from django.test import TestCase
 from posts.models import Group, Post
 
 User = get_user_model()
+NUM_CHAR = 15
 
 
 class PostModelTest(TestCase):
@@ -26,5 +27,5 @@ class PostModelTest(TestCase):
         expected_object_name = self.group.title
         self.assertEqual(expected_object_name, str(group))
         post = PostModelTest.post
-        expected_name = self.post.text[:15]
+        expected_name = self.post.text[:NUM_CHAR]
         self.assertEqual(expected_name, str(post))

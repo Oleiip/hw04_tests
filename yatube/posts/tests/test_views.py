@@ -18,19 +18,29 @@ class TaskPagesTests(TestCase):
             slug='some_people',
             description='everyyy some day'
         )
-
+        cls.group2 = Group.objects.create(
+            title='sale',
+            slug='people',
+            description='some day'
+        )
+        cls.post2 = Post.objects.create(
+            author=cls.user1,
+            text='Пост из группы2',
+            group=cls.group2
+        )
+        cls.user_post = Post.objects.create(
+            author=cls.user1,
+            text='Пост user',
+            group=cls.group
+        )
         cls.post1 = Post.objects.create(
             author=cls.user1,
             text='Тестовый текст',
             group=cls.group
         )
 
-        for post in range(12):
-            Post.objects.create(author=cls.user1,
-                                text='Тестовый текст',
-                                group=cls.group)
-
     def setUp(self):
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user1)
 
@@ -62,12 +72,9 @@ class TaskPagesTests(TestCase):
         """Шаблон index сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:index'))
         first_object = response.context['page_obj'][0]
-        task_author_0 = first_object.author.username
-        task_text_0 = first_object.text
-        task_group_0 = first_object.group.title
-        self.assertEqual(task_author_0, self.user1.username)
-        self.assertEqual(task_text_0, self.post1.text)
-        self.assertEqual(task_group_0, self.group.title)
+        self.assertEqual(first_object.author.username, self.user1.username)
+        self.assertEqual(first_object.text, self.post1.text)
+        self.assertEqual(first_object.group.title, self.group.title)
 
     def test_group_list_page_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
@@ -137,6 +144,49 @@ class TaskPagesTests(TestCase):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
 
+    def test_if_post_have_group(self):
+        list_views = [
+            reverse('posts:index'),
+            reverse('posts:group_list',
+                    kwargs={'slug': self.group.slug}),
+            reverse('posts:profile',
+                    kwargs={'username': self.user1.username})]
+
+        for reverse_name in list_views:
+            with self.subTest(reverse_name=reverse_name):
+                response = self.authorized_client.get(reverse_name)
+                context = response.context['page_obj'].object_list
+                self.assertIn(self.user_post, context)
+
+        response = self.authorized_client.get(reverse(
+            'posts:group_list',
+            kwargs={'slug': self.group2.slug})
+        )
+        context = response.context['page_obj'].object_list
+        self.assertNotIn(self.user_post, context)
+
+
+class PaginatorViewsTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user1 = User.objects.create_user(username='oleiip')
+        cls.group = Group.objects.create(
+            title='someee',
+            slug='some_people',
+            description='everyyy some day'
+        )
+
+        for post in range(13):
+            Post.objects.create(
+                author=cls.user1,
+                text='Тестовый текст',
+                group=cls.group
+            )
+
+    def setUp(self):
+        self.guest_client = Client()
+
     def test_first_page_contains_ten_records(self):
         """На страницу выводится 10 постов"""
         list_views = [
@@ -148,7 +198,7 @@ class TaskPagesTests(TestCase):
 
         for reverse_name in list_views:
             with self.subTest(reverse_name=reverse_name):
-                response = self.authorized_client.get(reverse_name)
+                response = self.guest_client.get(reverse_name)
                 self.assertEqual(len(response.context['page_obj']), 10)
 
     def test_second_page_contains_three_records(self):
@@ -161,5 +211,5 @@ class TaskPagesTests(TestCase):
                     kwargs={'username': self.user1.username})]
         for reverse_name in list_views:
             with self.subTest(reverse_name=reverse_name):
-                response = self.client.get(reverse_name + '?page=2')
+                response = self.guest_client.get(reverse_name + '?page=2')
                 self.assertEqual(len(response.context['page_obj']), 3)

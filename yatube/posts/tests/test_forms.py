@@ -41,27 +41,12 @@ class PostCreateForm(TestCase):
             reverse('posts:profile', kwargs={'username': self.user.username}))
 
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(
-            Post.objects.filter(
-                text='Новый пост',
-                group=PostCreateForm.group.id,
-            ).exists()
-        )
-
-    def test_cant_create_existing_slug(self):
-        post_count = Post.objects.count()
-        form_data = {
-            'title': 'Тестовая группа',
-            'description': 'Тестовое описание',
-            'slug': 'test-slug'
-        }
-        response = self.guest_client.post(
-            reverse('posts:post_create'),
-            data=form_data,
-            follow=True
-        )
-        self.assertEqual(Post.objects.count(), post_count)
-        self.assertEqual(response.status_code, 200)
+        new_post = Post.objects.filter(text=form_data['text'],
+                                       group=PostCreateForm.group.id)
+        for post in new_post:
+            self.assertEqual(post.author.username, self.user.username)
+            self.assertEqual(post.group.id, form_data['group'])
+            self.assertEqual(post.text, form_data['text'])
 
     def test_update_form(self):
         posts_count = Post.objects.count()
@@ -81,7 +66,7 @@ class PostCreateForm(TestCase):
 
         self.assertTrue(
             Post.objects.filter(
-                text='Обновленный текст',
+                text=form_data['text'],
                 group=PostCreateForm.group.id,
             ).exists()
         )
