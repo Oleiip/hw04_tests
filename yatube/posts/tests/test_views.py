@@ -39,6 +39,7 @@ class TaskPagesTests(TestCase):
             group=cls.group
         )
 
+
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
