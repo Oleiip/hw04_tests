@@ -64,11 +64,6 @@ class StaticURLTests(TestCase):
             response,
             reverse('users:login') + "?next=" + reverse('posts:post_create'))
 
-    def test_unknown_puth_return_404(self):
-        response = self.guest_client.get('/unexisting_page/')
-        self.assertEqual(response.status_code, 404)
-        self.assertRedirects(response, ('/auth/login/?next=/create/'))
-
 
 class PostURLTests(TestCase):
     @classmethod

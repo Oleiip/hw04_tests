@@ -23,24 +23,11 @@ class TaskPagesTests(TestCase):
             slug='people',
             description='some day'
         )
-
-        cls.post2 = Post.objects.create(
-            author=cls.user1,
-            text='Пост из группы2',
-            group=cls.group2
-        )
-        cls.user_post = Post.objects.create(
-            author=cls.user1,
-            text='Пост user',
-            group=cls.group
-        )
-
         cls.post1 = Post.objects.create(
             author=cls.user1,
             text='Тестовый текст',
             group=cls.group
         )
-
         cls.post2 = Post.objects.create(
             author=cls.user1,
             text='Пост из группы2',
