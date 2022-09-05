@@ -33,11 +33,6 @@ class TaskPagesTests(TestCase):
             text='Пост из группы2',
             group=cls.group2
         )
-        cls.user_post = Post.objects.create(
-            author=cls.user1,
-            text='Пост user',
-            group=cls.group
-        )
 
     def setUp(self):
         self.guest_client = Client()
@@ -165,14 +160,14 @@ class TaskPagesTests(TestCase):
             with self.subTest(reverse_name=reverse_name):
                 response = self.authorized_client.get(reverse_name)
                 context = response.context['page_obj'].object_list
-                self.assertIn(self.user_post, context)
+                self.assertIn(self.post1, context)
 
         response = self.authorized_client.get(reverse(
             'posts:group_list',
             kwargs={'slug': self.group2.slug})
         )
         context = response.context['page_obj'].object_list
-        self.assertNotIn(self.user_post, context)
+        self.assertNotIn(self.post1, context)
 
 
 class PaginatorViewsTest(TestCase):
