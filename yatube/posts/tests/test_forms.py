@@ -1,3 +1,4 @@
+# pylint: disable=attribute-defined-outside-init
 from django.test import Client, TestCase
 from django.urls import reverse
 from posts.models import Group, Post, User
@@ -35,8 +36,8 @@ class PostCreateForm(TestCase):
             reverse('posts:profile', kwargs={'username': self.user.username}))
 
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        new_post = Post.objects.first()
 
+        new_post = Post.objects.first()
         self.assertEqual(new_post.author.username, self.user.username)
         self.assertEqual(new_post.group.id, form_data['group'])
         self.assertEqual(new_post.text, form_data['text'])
@@ -79,9 +80,10 @@ class PostUpdateForm(TestCase):
             response,
             reverse('posts:post_detail',
                     kwargs={'post_id': self.post.id}))
-        self.assertEqual(Post.objects.count(), posts_count)
+
         new_post = Post.objects.first()
 
         self.assertEqual(new_post.author.username, self.user.username)
         self.assertEqual(new_post.group.id, form_data['group'])
         self.assertEqual(new_post.text, form_data['text'])
+        self.assertEqual(Post.objects.count(), posts_count)
