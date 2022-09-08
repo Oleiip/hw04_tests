@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
-{% load cache %}
-{% cache 20 index_page %}
-{% block title %}Последние обновления на сайте{% endblock %}
+{% block title %}Посты автора на которого подписанны{% endblock %}
 {% block content %}
 {% load thumbnail %}
 {% include 'includes/switcher.html' %}
   <div class="container py-5">
-    <h1>Последние обновления на сайте</h1>
+    <h1>Посты автора на которого подписанны</h1>
     {% for post in page_obj %}
     <article>
       <ul>
@@ -35,4 +33,3 @@
   {% include 'includes/paginator.html' %}
   </div>
 {% endblock %}
-{% endcache %}

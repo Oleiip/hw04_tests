@@ -1,12 +1,14 @@
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from posts.forms import PostForm
-from posts.models import Post, Group, User
+from django.views.decorators.cache import cache_page
+from posts.forms import PostForm, CommentForm
+from posts.models import Post, Group, User, Fallow
 
 POSTS_PER_PAGE = 10
 
 
+@cache_page(20, key_prefix='index_page')
 def index(request):
     posts = Post.objects.select_related('author', 'group')
     paginator = Paginator(posts, POSTS_PER_PAGE)
@@ -33,13 +35,16 @@ def group_posts(request, slug):
 
 
 def profile(request, username):
-    user = get_object_or_404(User, username=username)
-    posts = user.posts.select_related('group')
+    author = get_object_or_404(User, username=username)
+    posts = author.posts.select_related('group')
+    following = Fallow.objects.filter(user=request.user,
+                                      author=author).exists()
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     context = {
-        'author': user,
+        'following': following,
+        'author': author,
         'page_obj': page_obj,
     }
     return render(request, 'posts/profile.html', context)
@@ -47,8 +52,11 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
+    form = CommentForm()
     context = {
         'post': post,
+        'form': form,
+        'comments': post.comments.all(),
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -56,7 +64,7 @@ def post_detail(request, post_id):
 @login_required
 def post_create(request):
     if request.method == 'POST':
-        form = PostForm(request.POST)
+        form = PostForm(request.POST, files=request.FILES or None,)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
@@ -74,7 +82,9 @@ def post_edit(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if post.author == request.user:
         if request.method == 'POST':
-            form = PostForm(request.POST, instance=post)
+            form = PostForm(request.POST,
+                            files=request.FILES or None,
+                            instance=post)
             if form.is_valid:
                 form.save()
                 return redirect('posts:post_detail', post_id)
@@ -87,3 +97,45 @@ def post_edit(request, post_id):
         return render(request, 'posts/create_post.html', context)
 
     return redirect('posts:post_detail', post_id)
+
+
+@login_required
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    form = CommentForm(request.POST or None)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+    return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+def follow_index(request):
+    # информация о текущем пользователе доступна в переменной request.user
+    posts = Post.objects.filter(author__following__user=request.user)
+    paginator = Paginator(posts, POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {
+        'posts': posts,
+        'page_obj': page_obj,
+    }
+    return render(request, 'posts/follow.html', context)
+
+
+@login_required
+def profile_follow(request, username):
+    author = get_object_or_404(User, username=username)
+    if author != request.user:
+        Fallow.objects.get_or_create(user=request.user, author=author)
+    return redirect('posts:profile', username=username)
+
+
+@login_required
+def profile_unfollow(request, username):
+    author = get_object_or_404(User, username=username)
+    if author != request.user:
+        Fallow.objects.filter(user=request.user, author=author).delete()
+    return redirect('posts:profile', username=username)

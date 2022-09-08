@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.cache import cache
 from django import forms
-from posts.models import Post, Group
+from posts.models import Post, Group, Comment
 
 User = get_user_model()
 
@@ -11,6 +13,19 @@ class TaskPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
+        cls.uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=cls.small_gif,
+            content_type='image/gif'
+        )
         cls.user1 = User.objects.create_user(username='oleiip')
         cls.user2 = User.objects.create_user(username='fany')
         cls.group = Group.objects.create(
@@ -23,15 +38,16 @@ class TaskPagesTests(TestCase):
             slug='people',
             description='some day'
         )
-        cls.post2 = Post.objects.create(
-            author=cls.user1,
-            text='Пост из группы2',
-            group=cls.group2
-        )
         cls.post1 = Post.objects.create(
             author=cls.user1,
             text='Тестовый текст',
-            group=cls.group
+            group=cls.group,
+            image=cls.uploaded,
+        )
+        cls.comment = Comment.objects.create(
+            post=cls.post1,
+            author=cls.user1,
+            text='Тестовый комментарий'
         )
 
     def setUp(self):
@@ -72,6 +88,7 @@ class TaskPagesTests(TestCase):
         self.assertEqual(first_object.author.username, self.user1.username)
         self.assertEqual(first_object.text, self.post1.text)
         self.assertEqual(first_object.group.title, self.group.title)
+        self.assertTrue(first_object.image)
 
     def test_group_list_page_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
@@ -87,6 +104,7 @@ class TaskPagesTests(TestCase):
         self.assertEqual(first_object.group.id, self.group.id)
         self.assertEqual(first_object.group.title, self.group.title)
         self.assertEqual(first_object.group.slug, self.group.slug)
+        self.assertTrue(first_object.image)
         self.assertEqual(group_object.id, self.group.id)
         self.assertEqual(group_object.title, self.group.title)
         self.assertEqual(group_object.slug, self.group.slug)
@@ -104,6 +122,7 @@ class TaskPagesTests(TestCase):
         author_object = response.context['author']
         self.assertEqual(first_object.author.id, self.user1.id)
         self.assertEqual(first_object.author.username, self.user1.username)
+        self.assertTrue(first_object.image)
         self.assertEqual(author_object.id, self.user1.id)
         self.assertEqual(author_object.username, self.user1.username)
 
@@ -114,10 +133,15 @@ class TaskPagesTests(TestCase):
                     kwargs={'post_id': self.post1.id}
                     ))
         self.assertIn('post', response.context)
+        self.assertIn('comments', response.context)
         first_object = response.context['post']
+        comment_object = response.context['comments'][0]
         self.assertEqual(first_object.id, self.post1.id)
         self.assertEqual(first_object.author.username, self.user1.username)
         self.assertEqual(first_object.group.title, self.group.title)
+        self.assertTrue(first_object.image)
+        self.assertEqual(comment_object.text, self.comment.text)
+        self.assertEqual(comment_object.author.username, self.user1.username)
 
     def test_post_edit_page_show_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""
@@ -180,7 +204,6 @@ class PaginatorViewsTest(TestCase):
             slug='some_people',
             description='everyyy some day'
         )
-
         for post in range(13):
             Post.objects.create(
                 author=cls.user1,
@@ -217,3 +240,39 @@ class PaginatorViewsTest(TestCase):
             with self.subTest(reverse_name=reverse_name):
                 response = self.guest_client.get(reverse_name + '?page=2')
                 self.assertEqual(len(response.context['page_obj']), 3)
+
+
+class CacheTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='testuser')
+        post = Post.objects.create(
+            text='Тестовый пост',
+            author=cls.user,
+        )
+        cls.INDEX = reverse('posts:index')
+
+    def setUp(self):
+        self.guest_client = Client()
+        self.user = User.objects.create_user(username='new_user')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+
+    def test_cache(self):
+        response_1 = self.authorized_client.get(self.INDEX)
+        new_post = Post.objects.create(
+            text='Новый тестовый текст',
+            author=self.user,
+        )
+        response_2 = self.authorized_client.get(self.INDEX)
+        self.assertEqual(
+            response_1.content,
+            response_2.content
+         )
+        cache.clear()
+        response_3 = self.authorized_client.get(self.INDEX)
+        self.assertNotEqual(
+            response_1.content,
+            response_3.content
+         )
